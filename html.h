@@ -29,7 +29,7 @@ class HtmlElement : public enable_shared_from_this<HtmlElement> {
         friend class HtmlParser;
         friend class HtmlDocument;
         HtmlElement() {}
-        HtmlElement(shared_ptr<HtmlElement> p) : _parent(p) {}
+        HtmlElement(shared_ptr<HtmlElement> p) : parent(p) {}
         std::string getAttribute(const std::string &k) {
             if (attributes.find(k) != attributes.end()) {
                 return attributes[k];
@@ -49,8 +49,8 @@ class HtmlElement : public enable_shared_from_this<HtmlElement> {
             HtmlElement::getElementByTagName(shared_from_this(), name, result);
             return result;
         }
-        shared_ptr<HtmlElement> parent() {
-            return _parent.lock();
+        shared_ptr<HtmlElement> getParent() {
+            return parent.lock();
         }
         const std::string &text() {
             return value;
@@ -65,32 +65,32 @@ class HtmlElement : public enable_shared_from_this<HtmlElement> {
             return *childrens.end();
         }
         shared_ptr<HtmlElement> next() {
-            shared_ptr<HtmlElement> parent = parent();
-            if (parent) {
+            shared_ptr<HtmlElement> _parent = getParent();
+            if (_parent) {
                 size_t idx = 0;
-                size_t count = parent.childrens.size();
-                while (idx < count && this != parent.childrens[idx]) {
+                size_t count = _parent->childrens.size();
+                while (idx < count && shared_from_this() != _parent->childrens.at(idx)) {
                     ++idx;
                 }
                 if (++idx >= count) {
                     return shared_ptr<HtmlElement>();
                 }
-                return *parent.childrens[idx];
+                return *_parent->childrens.at(idx);
             }
             return shared_ptr<HtmlElement>();
         }
         shared_ptr<HtmlElement> prev() {
-            shared_ptr<HtmlElement> parent = parent();
-            if (parent) {
+            shared_ptr<HtmlElement> _parent = getParent();
+            if (_parent) {
                 size_t idx = 0;
-                size_t count = parent.childrens.size();
-                while (idx < count && this != parent.childrens[idx]) {
+                size_t count = _parent->childrens.size();
+                while (idx < count && shared_from_this() != _parent->childrens.at(idx)) {
                     ++idx;
                 }
                 if (--idx < 0) {
                     return shared_ptr<HtmlElement>();
                 }
-                return *parent.childrens[idx];
+                return *_parent->childrens.at(idx);
             }
             return shared_ptr<HtmlElement>();
         }
@@ -101,7 +101,7 @@ class HtmlElement : public enable_shared_from_this<HtmlElement> {
             if (index < 0 || index >= childrens.size()) {
                 return shared_ptr<HtmlElement>();
             }
-            return *childrens[index];
+            return *childrens.at(index);
         }
     private:
         static shared_ptr<HtmlElement> getElementById(const shared_ptr<HtmlElement> &element, const std::string &id) {
@@ -229,7 +229,7 @@ class HtmlElement : public enable_shared_from_this<HtmlElement> {
         std::string name;
         std::string value;
         std::map<std::string, std::string> attributes;
-        weak_ptr<HtmlElement> _parent;
+        weak_ptr<HtmlElement> parent;
         std::vector<shared_ptr<HtmlElement> > childrens;
 };
 
@@ -389,13 +389,13 @@ class HtmlParser {
                                     value.append(stream_ + pre, index - pre - 1);
                                 else
                                     value.append(stream_ + pre, index - pre);
-                                shared_ptr<HtmlElement> parent = self->parent();
+                                shared_ptr<HtmlElement> parent = self->getParent();
                                 while (parent) {
                                     if (parent->name == value) {
                                         std::cerr << "WARN : element not closed <" << self->name << "> " << std::endl;
                                         return pre - 2;
                                     }
-                                    parent = parent->parent();
+                                    parent = parent->getParent();
                                 }
                                 std::cerr << "WARN : unexpected closed element </" << value << "> for <" << self->name
                                           << ">" << std::endl;
