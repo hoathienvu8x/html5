@@ -7,8 +7,8 @@
  *
  */
 
-#ifndef HTMLPARSER_HPP_
-#define HTMLPARSER_HPP_
+#ifndef HTML_H
+#define HTML_H
 
 #include <stdio.h>
 #include <iostream>
@@ -32,6 +32,27 @@
     using std::shared_ptr;
     using std::weak_ptr;
 #endif
+// Begin selector query
+typedef struct selector_t {
+    std::string tag;
+    std::string key;
+    std::string val;
+    std::string exp = "=";
+    bool all = false;
+} selector_t;
+typedef std::vector<selector_t> query_t;
+typedef std::vector<query_t> simple_selector;
+
+simple_selector parse_selector(const std::string selector) {
+    simple_selector selectors;
+    if (selector.length() == 0) {
+        return selectors;
+    }
+    if (selector[0] == '*') {
+        
+    }
+    return selectors;
+}
 
 /**
  * class HtmlElement
@@ -50,7 +71,7 @@ class HtmlElement : public enable_shared_from_this<HtmlElement> {
             return *children.begin();
         }
 
-        const shared_ptr<HtmlElement> ChildEnd() {
+        const shared_ptr<HtmlElement> last_child() {
             return *children.end();
         }
 
@@ -117,11 +138,40 @@ class HtmlElement : public enable_shared_from_this<HtmlElement> {
         }
 
         shared_ptr<HtmlElement> next() {
+            shared_ptr<HtmlElement> p = GetParent();
+            if (p) {
+                size_t idx = 0;
+                size_t count = p->children.size();
+                while(idx < count && shared_from_this() != p->children[idx]) {
+                    ++idx;
+                }
+                if (++idx >= count) {
+                    return shared_ptr<HtmlElement>();
+                }
+                return p->children[idx];
+            }
             return shared_ptr<HtmlElement>();
         }
 
         shared_ptr<HtmlElement> prev() {
+            shared_ptr<HtmlElement> p = GetParent();
+            if (p) {
+                size_t idx = 0;
+                size_t count = p->children.size();
+                while(idx < count && shared_from_this() != p->children[idx]) {
+                    ++idx;
+                }
+                if(--idx < 0) {
+                    return shared_ptr<HtmlElement>();
+                }
+                return p->children[idx];
+            }
             return shared_ptr<HtmlElement>();
+        }
+        std::vector<shared_ptr<HtmlElement> > find(std::string selector) {
+            std::vector<shared_ptr<HtmlElement> > result;
+
+            return result;
         }
     private:
         static shared_ptr<HtmlElement> GetElementById(const shared_ptr<HtmlElement> &element, const std::string &id) {
