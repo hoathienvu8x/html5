@@ -59,36 +59,38 @@ class HtmlElement : public enable_shared_from_this<HtmlElement> {
             return name;
         }
         shared_ptr<HtmlElement> first_child() {
-            return *childrens->begin();
+            return *childrens.begin();
         }
         shared_ptr<HtmlElement> last_child() {
-            return *childrens->end();
+            return *childrens.end();
         }
         shared_ptr<HtmlElement> next() {
-            if (_parent) {
+            shared_ptr<HtmlElement> parent = parent();
+            if (parent) {
                 size_t idx = 0;
-                size_t count = _parent->childrens.size();
-                while (idx < count && this != _parent->childrens[idx]) {
+                size_t count = parent.childrens.size();
+                while (idx < count && this != parent.childrens[idx]) {
                     ++idx;
                 }
                 if (++idx >= count) {
                     return shared_ptr<HtmlElement>();
                 }
-                return _parent->childrens[idx];
+                return *parent.childrens[idx];
             }
             return shared_ptr<HtmlElement>();
         }
         shared_ptr<HtmlElement> prev() {
-            if (_parent) {
+            shared_ptr<HtmlElement> parent = parent();
+            if (parent) {
                 size_t idx = 0;
-                size_t count = _parent->childrens.size();
-                while (idx < count && this != _parent->childrens[idx]) {
+                size_t count = parent.childrens.size();
+                while (idx < count && this != parent.childrens[idx]) {
                     ++idx;
                 }
                 if (--idx < 0) {
                     return shared_ptr<HtmlElement>();
                 }
-                return _parent->childrens[idx];
+                return *parent.childrens[idx];
             }
             return shared_ptr<HtmlElement>();
         }
@@ -99,7 +101,7 @@ class HtmlElement : public enable_shared_from_this<HtmlElement> {
             if (index < 0 || index >= childrens.size()) {
                 return shared_ptr<HtmlElement>();
             }
-            return childrens[index];
+            return *childrens[index];
         }
     private:
         static shared_ptr<HtmlElement> getElementById(const shared_ptr<HtmlElement> &element, const std::string &id) {
@@ -161,7 +163,7 @@ class HtmlElement : public enable_shared_from_this<HtmlElement> {
                             std::cerr << "WARN : attribute unexpected " << input << std::endl;
                         } else if (input == ' ') {
                             if (!k.empty()) {
-                                attribute[k] = v;
+                                attributes[k] = v;
                                 k.clear();
                             }
                         } else if (input == '=') {
@@ -173,7 +175,7 @@ class HtmlElement : public enable_shared_from_this<HtmlElement> {
                     case PARSE_ATTR_VALUE_BEGIN:{
                         if (input == '\t' || input == '\r' || input == '\n' || input == ' ') {
                             if (!k.empty()) {
-                                attribute[k] = v;
+                                attributes[k] = v;
                                 k.clear();
                             }
                             state = PARSE_ATTR_KEY;
@@ -189,7 +191,7 @@ class HtmlElement : public enable_shared_from_this<HtmlElement> {
                     } break;
                     case PARSE_ATTR_VALUE_END: {
                         if((quota && input == split) || (!quota && (input == '\t' || input == '\r' || input == '\n' || input == ' '))) {
-                            attribute[k] = v;
+                            attributes[k] = v;
                             k.clear();
                             v.clear();
                             state = PARSE_ATTR_KEY;
@@ -201,7 +203,7 @@ class HtmlElement : public enable_shared_from_this<HtmlElement> {
                 index++;
             }
             if(!k.empty()){
-                attribute[k] = v;
+                attributes[k] = v;
             }
             //trim
             if (!value.empty()) {
@@ -387,7 +389,7 @@ class HtmlParser {
                                     value.append(stream_ + pre, index - pre - 1);
                                 else
                                     value.append(stream_ + pre, index - pre);
-                                shared_ptr<HtmlElement> parent = self->GetParent();
+                                shared_ptr<HtmlElement> parent = self->parent();
                                 while (parent) {
                                     if (parent->name == value) {
                                         std::cerr << "WARN : element not closed <" << self->name << "> " << std::endl;
